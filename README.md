@@ -68,7 +68,7 @@ records Champion sign-offs and a full change history, and gives a portfolio over
 
 ```powershell
 # 1. Get the code
-git clone <your-repository-url> a3-tracker
+git clone https://github.com/BotezAlexandru90/A3-Problem-Solving-Framework.git a3-tracker
 cd a3-tracker
 
 # 2. Create a virtual environment
