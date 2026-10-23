@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Search all A3s</h1>
+<form method="get" class="toolbar">
+  <input name="q" value="{{ q }}" size="60" placeholder="Words, part numbers, defect codes, people ..." autofocus>
+  <button>Search</button>
+</form>
+{% if q and q|length < 2 %}<p class="muted">Enter at least 2 characters.</p>{% endif %}
+{% if q|length >= 2 %}
+<p class="muted">{{ hits|length }} match(es){% if hits|length >= 300 %} — showing the first 300, refine your search{% endif %}.</p>
+<table class="grid small">
+  <thead><tr><th>A3</th><th>Status</th><th>Where</th><th>Match</th></tr></thead>
+  <tbody>
+  {% for h in hits %}
+    <tr>
+      <td><a href="{{ url_for('a3.view', a3_id=h.a3_id, tab=h.step) }}">#{{ h.a3_id }} {{ h.a3_title }}</a></td>
+      <td>{{ h.status }}</td>
+      <td>{{ h.label }}</td>
+      <td>…{{ h.before }}<mark>{{ h.match }}</mark>{{ h.after }}…</td>
+    </tr>
+  {% else %}<tr><td colspan="4">No matches.</td></tr>{% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}

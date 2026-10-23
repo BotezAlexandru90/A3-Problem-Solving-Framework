@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% macro bars(pairs) %}
+  {% set ns = namespace(mx=1) %}
+  {% for k, v in pairs %}{% if v > ns.mx %}{% set ns.mx = v %}{% endif %}{% endfor %}
+  <table class="bars">
+  {% for k, v in pairs %}
+    <tr><td>{{ k }}</td><td><span class="bar" style="width: {{ (100 * v / ns.mx)|round|int }}%"></span></td><td>{{ v }}</td></tr>
+  {% else %}<tr><td class="muted">none</td></tr>{% endfor %}
+  </table>
+{% endmacro %}
+{% block content %}
+<h1>Portfolio statistics</h1>
+<section class="kpis">
+  <div class="kpi"><b>{{ s.total }}</b><span>A3s</span></div>
+  <div class="kpi"><b>{{ s.open }}</b><span>Open</span></div>
+  <div class="kpi"><b>{{ s.closed }}</b><span>Closed</span></div>
+  <div class="kpi"><b>{{ s.closure_rate if s.closure_rate is not none else '-' }}%</b><span>Closure rate</span></div>
+  <div class="kpi"><b>{{ s.closed_90 }}</b><span>Closed last 90 days</span></div>
+  <div class="kpi"><b>{{ s.avg_age if s.avg_age is not none else '-' }}</b><span>Avg. age open (days)</span></div>
+  <div class="kpi"><b>{{ s.avg_lead if s.avg_lead is not none else '-' }}</b><span>Avg. lead time closed (days)</span></div>
+</section>
+
+<div class="stats-grid">
+  <div class="card"><h2>Average days per step</h2>
+    <table class="grid small"><thead><tr><th>Step</th><th>Avg. days</th><th>A3s</th></tr></thead><tbody>
+    {% for step, v in s.step_days.items() %}<tr><td>{{ step }}</td><td>{{ v[0] if v[0] is not none else '-' }}</td><td>{{ v[1] }}</td></tr>{% endfor %}
+    </tbody></table>
+    <small class="muted">Based on status changes in the change history (incl. the time open A3s are currently in a step).</small>
+  </div>
+  <div class="card"><h2>Readiness of open A3s</h2>{{ bars(s.readiness) }}</div>
+  <div class="card"><h2>By status</h2>{{ bars(s.by.status) }}</div>
+  <div class="card"><h2>By severity</h2>{{ bars(s.by.severity) }}</div>
+  <div class="card"><h2>By trigger</h2>{{ bars(s.by.trigger) }}</div>
+  <div class="card"><h2>By department</h2>{{ bars(s.by.department) }}</div>
+  <div class="card"><h2>By A3 type</h2>{{ bars(s.by.a3_type) }}</div>
+  <div class="card"><h2>Overdue actions by owner</h2>{{ bars(s.overdue_owner) }}</div>
+  <div class="card"><h2>Overdue actions by department</h2>{{ bars(s.overdue_dept) }}</div>
+  <div class="card"><h2>Oldest open A3s</h2>
+    <table class="grid small"><thead><tr><th>Days</th><th>A3</th><th>Status</th></tr></thead><tbody>
+    {% for days, a in s.oldest %}<tr><td>{{ days }}</td><td><a href="{{ url_for('a3.view', a3_id=a.id) }}">#{{ a.id }} {{ a.title }}</a></td><td>{{ a.status }}</td></tr>
+    {% else %}<tr><td colspan="3" class="muted">none</td></tr>{% endfor %}
+    </tbody></table>
+  </div>
+</div>
+{% endblock %}

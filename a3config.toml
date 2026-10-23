@@ -1,0 +1,71 @@
+# A3 Tracker configuration
+#
+# IMPORTANT: The defaults in this file come from general A3 / structured problem solving guidance.
+# They are NOT copied from any company rule, its annexes, a trigger matrix or an official
+# evaluation sheet. The rule owner / SPS coordinator must review every section marked ALIGN and adjust
+# it to the currently approved revision, then fill in [meta].
+#
+# Location: the app reads <data-dir>/a3config.toml if it exists, otherwise this file.
+# Restart the server after changes.
+
+[meta]
+rule_reference = ""       # ALIGN: identifier of the problem-solving rule this file implements
+rule_revision = ""        # ALIGN: approved revision this file was aligned with
+aligned_by = ""
+aligned_on = ""           # YYYY-MM-DD
+
+[picklists]
+# ALIGN: trigger list per your problem-solving rule / trigger matrix
+triggers = [
+    "Customer request or complaint", "Internal rule", "Management direction",
+    "Organizational trigger matrix", "Team decision", "Technical compliance",
+    "Audit", "Stop ship", "Improvement", "0-mileage", "Warranty",
+    "Disruption", "R&D", "Other",
+]
+# ALIGN: severity classes. The tool never assigns severity; users select the classified value.
+severities = ["Not assessed", "1", "2", "3", "4", "Not applicable"]
+fishbone_categories = ["Man", "Machine", "Method", "Material", "Measurement", "Environment", "Management"]
+# Suggestions offered in the General tab (free text is still allowed)
+locations = []
+departments = []
+topic_codes = []
+
+[severity]
+# ALIGN: severity values that require Early Warning, myA3Creator documentation, Fast Track / Read Across check
+high = ["1", "2"]
+
+[workflow]
+# Steps that need a Champion sign-off before the A3 may move past them
+signoff_steps = ["a", "b", "c", "d"]
+require_signoff_to_advance = true
+# Roles allowed to sign off: admin, champion, team_leader, member, viewer
+signoff_roles = ["champion", "admin"]
+
+# Gate check levels: "required" (blocks progress), "advice" (warning only) or "off".
+# Any check id shown in the app (hover a check) can be listed here.
+[checks]
+# "a.problem_quantified" = "required"
+
+# A3-type specific behaviour. ALIGN with the Basic / Standard / Extended A3 templates.
+[a3_types.Basic]
+hidden_fields = ["deliverables", "methods_used", "solution_alternatives", "observation_window"]
+hidden_sections = ["is_is_not", "fishbone", "why_step"]
+[a3_types.Basic.checks]
+"a.is_is_not" = "off"
+"b.multiple_hypotheses" = "off"
+"b.methods" = "off"
+"b.why_chain" = "off"
+"c.alternatives" = "off"
+
+[a3_types.Standard]
+hidden_fields = []
+hidden_sections = []
+[a3_types.Standard.checks]
+
+[a3_types.Extended]
+hidden_fields = []
+hidden_sections = []
+[a3_types.Extended.checks]
+"a.is_is_not" = "required"
+"b.why_chain" = "required"
+"d.kpi_recorded" = "required"

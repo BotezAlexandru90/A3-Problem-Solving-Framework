@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% from 'macros.html' import field %}
+{% block content %}
+<h1>{{ 'Edit' if row_id else 'Add' }} {{ label }} — A3 #{{ a3.id }}: {{ a3.title }}</h1>
+{% if table == 'hypothesis' %}
+<p class="muted">Every cause starts as a hypothesis. Set "Verified" only when the actual result and evidence support it.</p>
+{% elif table == 'action' %}
+<p class="muted">Keep containment, correction, corrective and preventive actions separate. "Done" is not "Effective" — record the verification evidence.</p>
+{% endif %}
+<form method="post" class="card">
+  <input type="hidden" name="csrf" value="{{ csrf_token }}">
+  <input type="hidden" name="tab" value="{{ tab }}">
+  {% for name, flabel, widget in fields %}
+    {{ field(name, flabel, widget, row[name] if row else '', options, hypotheses,
+             types if (name == 'action_type' and types) else None) }}
+  {% endfor %}
+  <button class="primary">Save</button>
+  <a href="{{ url_for('a3.view', a3_id=a3.id, tab=tab) }}">Cancel</a>
+</form>
+{% endblock %}

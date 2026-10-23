@@ -1,0 +1,200 @@
+{% extends 'base.html' %}
+{% from 'macros.html' import field, gate_panel, fb_cat %}
+{% block title %}A3 #{{ a3.id }}{% endblock %}
+{% block content %}
+<section class="a3-head">
+  <h1>A3 #{{ a3.id }}: {{ a3.title }} {% if a3.is_template %}<span class="badge">TEMPLATE</span>{% endif %}</h1>
+  <p class="muted">{{ a3.a3_type }} A3 · Status <b>{{ a3.status }}</b> · Readiness <b>{{ readiness }}</b> ·
+     Last update {{ a3.updated_at }} by {{ a3.updated_by or '-' }} · version {{ a3.version }}</p>
+  <div class="links no-print">
+    <a href="{{ url_for('a3.history', a3_id=a3.id) }}">Change history</a>
+    {% if can_edit %}<a href="{{ url_for('a3.import_notes', a3_id=a3.id) }}">Draft from notes / document</a>{% endif %}
+    <a href="{{ url_for('a3.export_md', a3_id=a3.id) }}">Export Markdown</a>
+    <a href="{{ url_for('a3.export_xlsx', a3_id=a3.id) }}">Export Excel</a>
+    <a href="{{ url_for('a3.print_view', a3_id=a3.id) }}" target="_blank">Print / PDF</a>
+  </div>
+  {% for m in alerts %}<div class="flash alert">{{ m }}</div>{% endfor %}
+</section>
+
+<nav class="tabs">
+  {% for k, label, _ in steps %}
+    <a href="{{ url_for('a3.view', a3_id=a3.id, tab=k) }}" class="{{ 'active' if k == tab else '' }} {{ 'ok' if ev[k].ready else '' }}">
+      {{ label }}{% if signoffs[k].approved %} <span class="signed" title="Champion approved">&#9733;</span>{% endif %}</a>
+  {% endfor %}
+</nav>
+
+<div class="layout">
+  <div class="main-col">
+    <form method="post" action="{{ url_for('a3.save', a3_id=a3.id) }}" class="card">
+      <input type="hidden" name="csrf" value="{{ csrf_token }}">
+      <input type="hidden" name="tab" value="{{ tab }}">
+      <input type="hidden" name="version" value="{{ a3.version }}">
+      {% if tab == 'a' %}<p class="muted">Describe facts only. No assumed cause and no solution in the problem description. Use [[...]] for placeholders; they count as empty.</p>{% endif %}
+      {% for name, label, widget in fields %}
+        {{ field(name, label, widget, a3[name], options, readonly=not can_edit) }}
+      {% endfor %}
+      {% if can_edit %}<button class="primary">Save {{ step[1] }}</button>{% endif %}
+    </form>
+
+    {% if fishbone %}
+    <div class="card">
+      <h2>Fishbone (hypotheses — not verified causes unless marked Verified)</h2>
+      <div class="fishbone">
+        {% set cats = fishbone.groups|list %}
+        {% set half = (cats|length + 1) // 2 %}
+        <div class="fb-row">
+          {% for c in cats[:half] %}{{ fb_cat(c, fishbone.groups[c]) }}{% endfor %}
+        </div>
+        <div class="fb-spine"><span class="fb-line"></span><div class="fb-head">{{ a3.title }}</div></div>
+        <div class="fb-row">
+          {% for c in cats[half:] %}{{ fb_cat(c, fishbone.groups[c]) }}{% endfor %}
+        </div>
+      </div>
+      {% if fishbone.unassigned %}<p class="muted">Without fishbone category: {% for h in fishbone.unassigned %}#{{ h.id }} {% endfor %}</p>{% endif %}
+    </div>
+    {% endif %}
+
+    {% if why_chains is defined and why_chains %}
+    <div class="card">
+      <h2>Why-Why chains</h2>
+      {% for cause_id, chain in why_chains.items() %}
+        <div class="why-chain">
+          <div class="why-start">Start: {% if cause_id in hyp_index %}#{{ cause_id }} {{ hyp_index[cause_id].hypothesis }}
+            <span class="tag {{ 'pass' if hyp_index[cause_id].status == 'Verified' else 'fail' }}">{{ hyp_index[cause_id].status }}</span>
+            {% else %}<span class="fail">no starting cause linked</span>{% endif %}</div>
+          <ol>
+          {% for w in chain %}
+            <li class="{{ 'pass' if w.status == 'Supported' else ('fail' if w.status == 'Not supported' else 'warn') }}">
+              <b>Why?</b> {{ w.statement }} <small>[{{ w.status }}{% if w.evidence %} · evidence: {{ w.evidence }}{% endif %}]</small>
+              {% if w.is_root != 'No' %}<span class="tag pass">{{ w.is_root }}</span>{% endif %}
+            </li>
+          {% endfor %}
+          </ol>
+        </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if chart is defined %}
+    <div class="card">
+      <h2>KPI trend vs. Step A target</h2>
+      <p class="muted">Metric: {{ a3.target_metric or 'not defined' }} · Baseline: {{ a3.target_baseline or '-' }} ·
+        Target: {{ a3.target_value or '-' }} ({{ a3.target_direction }}) by {{ a3.target_date or '-' }}
+        {% if kpi.meets is not none %} · Latest {{ kpi.latest }}: <b class="{{ 'pass' if kpi.meets else 'fail' }}">{{ 'meets target' if kpi.meets else 'does not meet target' }}</b>{% endif %}</p>
+      {{ chart }}
+    </div>
+    {% endif %}
+
+    {% for c in children %}
+    <div class="card">
+      <h2>{{ c.label }}{% if c.types %} ({{ c.types|join(', ') }}){% endif %}</h2>
+      <table class="grid small">
+        <thead><tr><th>#</th>
+          {% for name, label, _ in c.fields %}<th>{{ label }}</th>{% endfor %}{% if can_edit %}<th></th>{% endif %}</tr></thead>
+        <tbody>
+        {% for r in c.rows %}
+          <tr class="{{ 'overdue' if r.due_date and r.status in ('Open', 'In progress') and r.due_date < today else '' }}">
+            <td>{{ r.id }}</td>
+            {% for name, _, widget in c.fields %}
+              <td>{% if widget == 'cause' %}{% if r[name] in hyp_index %}#{{ r[name] }} {{ hyp_index[r[name]].hypothesis[:40] }}{% else %}<span class="fail">not linked</span>{% endif %}{% else %}{{ r[name] if r[name] is not none else '' }}{% endif %}</td>
+            {% endfor %}
+            {% if can_edit %}
+            <td class="no-print nowrap">
+              <a href="{{ url_for('a3.edit_child', a3_id=a3.id, table=c.table, row_id=r.id, tab=tab, type=c.types or []) }}">Edit</a>
+              <form method="post" action="{{ url_for('a3.delete_child', a3_id=a3.id, table=c.table, row_id=r.id) }}" class="inline" onsubmit="return confirm('Delete this entry?')">
+                <input type="hidden" name="csrf" value="{{ csrf_token }}">
+                <input type="hidden" name="tab" value="{{ tab }}">
+                <button class="link">Delete</button>
+              </form>
+            </td>
+            {% endif %}
+          </tr>
+        {% else %}
+          <tr><td colspan="{{ c.fields|length + 2 }}" class="muted">None yet.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% if can_edit %}<a class="button" href="{{ url_for('a3.edit_child', a3_id=a3.id, table=c.table, tab=tab, type=c.types or []) }}">Add {{ c.label }}</a>{% endif %}
+    </div>
+    {% endfor %}
+
+    {% if tab == 'general' %}
+      {% if can_edit %}
+      <details class="card no-print">
+        <summary>Duplicate this A3</summary>
+        <form method="post" action="{{ url_for('a3.duplicate', a3_id=a3.id) }}">
+          <input type="hidden" name="csrf" value="{{ csrf_token }}">
+          <label class="field"><span>Title of the copy</span><input type="text" name="title" required maxlength="300"></label>
+          <p>Copy text fields of:
+            {% for k, label, _ in steps %}<label class="check"><input type="checkbox" name="steps" value="{{ k }}" {{ 'checked' if k == 'general' }}> {{ label }}</label>{% endfor %}
+          </p>
+          <p class="muted">Lists (hypotheses, actions, ...) are not copied. Review every copied field.</p>
+          <button>Create copy</button>
+        </form>
+      </details>
+      {% endif %}
+      {% if has_role('team_leader') %}
+      <form method="post" action="{{ url_for('a3.toggle_template', a3_id=a3.id) }}" class="card no-print">
+        <input type="hidden" name="csrf" value="{{ csrf_token }}">
+        <input type="hidden" name="version" value="{{ a3.version }}">
+        <button>{{ 'Turn back into a normal A3' if a3.is_template else 'Use as template for new A3s' }}</button>
+        <small class="muted">Templates are hidden from the portfolio, statistics and registers.</small>
+      </form>
+      {% endif %}
+      {% if has_role('admin') %}
+      <details class="card danger no-print">
+        <summary>Delete this A3</summary>
+        <form method="post" action="{{ url_for('a3.delete', a3_id=a3.id) }}">
+          <input type="hidden" name="csrf" value="{{ csrf_token }}">
+          <p>Type the exact title to confirm. This cannot be undone (the change history is kept).</p>
+          <input name="confirm_title" size="60">
+          <button>Delete permanently</button>
+        </form>
+      </details>
+      {% endif %}
+    {% endif %}
+  </div>
+
+  <aside class="side-col">
+    {{ gate_panel(ev[tab], step[1]) }}
+
+    {% if tab in signoff_steps %}
+    {% set so = signoffs[tab] %}
+    <div class="card signoff">
+      <h3>Champion sign-off</h3>
+      {% if so.row %}
+        <p><b class="{{ 'pass' if so.approved else 'fail' }}">{{ so.row.decision }}</b> by {{ so.row.user }} on {{ so.row.ts }}
+        {% if so.row.comment %}<br><i>{{ so.row.comment }}</i>{% endif %}</p>
+        {% if so.stale %}<p class="warn">Content of this step changed after the sign-off; a new sign-off is needed.</p>{% endif %}
+      {% else %}
+        <p class="muted">Not signed off yet.</p>
+      {% endif %}
+      {% if can_signoff() %}
+      <form method="post" action="{{ url_for('a3.signoff', a3_id=a3.id) }}" class="no-print">
+        <input type="hidden" name="csrf" value="{{ csrf_token }}">
+        <input type="hidden" name="step" value="{{ tab }}">
+        <label class="field"><span>Decision</span>
+          <select name="decision">{% for d in options.SIGNOFF_DECISIONS %}<option>{{ d }}</option>{% endfor %}</select></label>
+        <label class="field"><span>Comment / feedback</span><textarea name="comment" rows="3"></textarea></label>
+        <button>Record sign-off</button>
+        {% if not ev[tab].ready %}<small class="fail">Approval is blocked while required checks are open.</small>{% endif %}
+      </form>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% if has_role('team_leader') and not a3.is_template %}
+    <form method="post" action="{{ url_for('a3.set_status', a3_id=a3.id) }}" class="card no-print">
+      <input type="hidden" name="csrf" value="{{ csrf_token }}">
+      <input type="hidden" name="version" value="{{ a3.version }}">
+      <input type="hidden" name="tab" value="{{ tab }}">
+      <label class="field"><span>Move A3 to</span>
+        <select name="status">{% for s in statuses %}<option {% if s == a3.status %}selected{% endif %}>{{ s }}</option>{% endfor %}</select>
+      </label>
+      <button>Change status</button>
+      <small class="muted">Moving forward requires all earlier quality gates and Champion sign-offs. Closing requires all of them.</small>
+    </form>
+    {% endif %}
+  </aside>
+</div>
+{% endblock %}

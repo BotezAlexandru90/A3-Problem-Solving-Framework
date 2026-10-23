@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Lessons Learned register</h1>
+<table class="grid">
+  <thead><tr><th>A3</th><th>Title</th><th>Context</th><th>Learning</th><th>Documented where</th><th>Distribution</th><th>Standard updated</th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+    <tr>
+      <td><a href="{{ url_for('a3.view', a3_id=r.a3_id, tab='d') }}">#{{ r.a3_id }} {{ r.a3_title }}</a></td>
+      <td>{{ r.title }}</td><td>{{ r.context }}</td><td>{{ r.learning }}</td>
+      <td>{{ r.documented_where }}</td><td>{{ r.distribution }}</td><td>{{ r.standard_updated }}</td>
+    </tr>
+  {% else %}<tr><td colspan="7">No Lessons Learned recorded.</td></tr>{% endfor %}
+  </tbody>
+</table>
+{% endblock %}

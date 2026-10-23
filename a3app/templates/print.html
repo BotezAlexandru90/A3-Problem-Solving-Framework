@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% from 'macros.html' import gate_panel %}
+{% block title %}A3 #{{ a3.id }} — print{% endblock %}
+{% block content %}
+<div class="print">
+  <h1>A3 #{{ a3.id }}: {{ a3.title }}</h1>
+  <p>Status {{ a3.status }} · Overall readiness: <b>{{ readiness }}</b> · Updated {{ a3.updated_at }} by {{ a3.updated_by or '-' }}</p>
+  {% for m in alerts %}<p class="alert">{{ m }}</p>{% endfor %}
+  <button class="no-print" onclick="window.print()">Print / Save as PDF</button>
+
+  {% for k, label, fields in steps %}
+  <section class="print-step">
+    <h2>{{ label }}</h2>
+    <dl>
+      {% for name, flabel, _ in fields %}
+        <dt>{{ flabel }}</dt><dd>{{ a3[name] or 'not yet provided' }}</dd>
+      {% endfor %}
+    </dl>
+    {{ gate_panel(ev[k], label) }}
+    {% set so = signoffs[k] %}
+    {% if so.row %}<p>Champion sign-off: <b>{{ so.row.decision }}</b> by {{ so.row.user }} on {{ so.row.ts }}{% if so.stale %} <span class="fail">(changed since sign-off)</span>{% endif %}{% if so.row.comment %} — {{ so.row.comment }}{% endif %}</p>{% endif %}
+    {% if k == 'd' %}<h3>KPI trend</h3>{{ chart }}{% endif %}
+  </section>
+  {% endfor %}
+
+  {% for table, flist in child_fields.items() %}
+  <section class="print-step">
+    <h2>{{ child_labels[table] }}</h2>
+    <table class="grid small">
+      <thead><tr><th>#</th>{% for n, l, _ in flist %}<th>{{ l }}</th>{% endfor %}</tr></thead>
+      <tbody>
+      {% for r in b[table] %}
+        <tr><td>{{ r.id }}</td>{% for n, _, _ in flist %}<td>{{ r[n] if r[n] is not none else '' }}</td>{% endfor %}</tr>
+      {% else %}<tr><td colspan="{{ flist|length + 1 }}">none</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </section>
+  {% endfor %}
+</div>
+{% endblock %}

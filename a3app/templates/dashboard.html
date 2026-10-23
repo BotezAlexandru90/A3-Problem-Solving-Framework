@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="toolbar">
+  {% if has_role('member') %}
+  <form method="post" action="{{ url_for('a3.new_a3') }}" class="inline">
+    <input type="hidden" name="csrf" value="{{ csrf_token }}">
+    <input name="title" placeholder="New A3 title — describe the problem / gap, not a cause or solution" size="70" required maxlength="300">
+    <select name="template_id" title="Start from template">
+      <option value="">Blank A3</option>
+      {% for t in templates %}<option value="{{ t.id }}">Template: {{ t.title }}</option>{% endfor %}
+    </select>
+    <button>Create A3</button>
+  </form>
+  {% endif %}
+  <form method="get" class="inline">
+    <select name="status" onchange="this.form.submit()">
+      <option value="open" {% if status_filter == 'open' %}selected{% endif %}>Open A3s</option>
+      <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All</option>
+      {% for s in statuses %}<option {% if status_filter == s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+    </select>
+  </form>
+</section>
+
+<section class="kpis">
+  {% for s in statuses %}<div class="kpi"><b>{{ counts.get(s, 0) }}</b><span>{{ s }}</span></div>{% endfor %}
+</section>
+
+<table class="grid">
+  <thead><tr>
+    <th>#</th><th>Title</th><th>Status</th><th>Severity</th><th>Champion</th><th>Team Leader</th>
+    {% for k, label, _ in steps %}<th title="{{ label }}">{{ k|upper if k != 'general' else 'Gen' }}</th>{% endfor %}
+    <th>Open actions</th><th>Overdue</th><th>Readiness</th><th>Updated</th>
+  </tr></thead>
+  <tbody>
+  {% for r in rows %}
+    <tr>
+      <td>{{ r.a3.id }}</td>
+      <td><a href="{{ url_for('a3.view', a3_id=r.a3.id) }}">{{ r.a3.title }}</a></td>
+      <td>{{ r.a3.status }}</td>
+      <td class="{{ 'sev-high' if r.a3.severity in ('1','2') else '' }}">{{ r.a3.severity }}</td>
+      <td>{{ r.a3.champion }}</td>
+      <td>{{ r.a3.team_leader }}</td>
+      {% for k, _, _ in steps %}<td class="dot {{ 'ok' if r.gates[k] else 'no' }}">{{ '●' }}</td>{% endfor %}
+      <td>{{ r.open_actions }}</td>
+      <td class="{{ 'overdue' if r.overdue else '' }}">{{ r.overdue }}</td>
+      <td>{{ r.readiness }}</td>
+      <td>{{ r.a3.updated_at[:10] }} {{ r.a3.updated_by }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="16">No A3s match this filter.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+<p class="muted">Gate dots: green = required checks of that step pass. Readiness is a gate summary, not an approval.</p>
+{% if templates %}
+<h2>Templates</h2>
+<ul>{% for t in templates %}<li><a href="{{ url_for('a3.view', a3_id=t.id) }}">{{ t.title }}</a> <span class="muted">({{ t.a3_type }})</span></li>{% endfor %}</ul>
+{% endif %}
+{% endblock %}

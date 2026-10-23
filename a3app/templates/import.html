@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Draft from notes — A3 #{{ a3.id }}: <a href="{{ url_for('a3.view', a3_id=a3.id) }}">{{ a3.title }}</a></h1>
+<div class="flash alert">Keyword-based pre-sorting, not an analysis. Every imported sentence is marked
+  <b>[UNVERIFIED IMPORT]</b> and counts as empty for the quality gates until you verify and edit it.
+  Do not upload information beyond what the A3 team is allowed to see.</div>
+
+{% if sentences is none %}
+<form method="post" enctype="multipart/form-data" class="card">
+  <input type="hidden" name="csrf" value="{{ csrf_token }}">
+  <input type="hidden" name="stage" value="extract">
+  <label class="field"><span>Paste notes, an incident description or an e-mail</span><textarea name="text" rows="12"></textarea></label>
+  <label class="field"><span>…and/or upload a document (.docx, .pptx, .pdf, .txt, .md, .eml; max. 10 MB)</span><input type="file" name="file" accept=".docx,.pptx,.pdf,.txt,.md,.eml,.csv"></label>
+  <button class="primary">Extract sentences</button>
+</form>
+{% elif sentences %}
+<form method="post" class="card">
+  <input type="hidden" name="csrf" value="{{ csrf_token }}">
+  <input type="hidden" name="stage" value="apply">
+  <input type="hidden" name="version" value="{{ a3.version }}">
+  <p>Review the proposed destination for each sentence. Choose <i>Skip</i> for anything that is opinion, irrelevant or confidential.</p>
+  <table class="grid small">
+    <thead><tr><th>Sentence</th><th>Put into</th></tr></thead>
+    <tbody>
+    {% for s, target in sentences %}
+      <tr>
+        <td>{{ s }}<input type="hidden" name="s{{ loop.index0 }}" value="{{ s }}"></td>
+        <td><select name="t{{ loop.index0 }}">{% for k, label in targets %}<option value="{{ k }}" {% if k == target %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <button class="primary">Add to A3 as unverified draft</button>
+  <a href="{{ url_for('a3.import_notes', a3_id=a3.id) }}">Start over</a>
+</form>
+{% endif %}
+{% endblock %}

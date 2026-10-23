@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Users and roles</h1>
+<table class="grid small">
+  <thead><tr><th>Username</th><th>Display name</th><th>Role</th><th>Active</th><th>Reset password</th><th></th></tr></thead>
+  <tbody>
+  {% for u in users %}
+    <tr>
+      {% set f = 'u' ~ u.id %}
+      <td>{{ u.username }}
+        <form method="post" id="{{ f }}">
+          <input type="hidden" name="csrf" value="{{ csrf_token }}">
+          <input type="hidden" name="action" value="update">
+          <input type="hidden" name="user_id" value="{{ u.id }}">
+        </form></td>
+      <td><input form="{{ f }}" name="display_name" value="{{ u.display_name }}"></td>
+      <td><select form="{{ f }}" name="role">{% for r in roles %}<option {% if r == u.role %}selected{% endif %}>{{ r }}</option>{% endfor %}</select></td>
+      <td><select form="{{ f }}" name="active"><option value="1" {% if u.active %}selected{% endif %}>Yes</option><option value="0" {% if not u.active %}selected{% endif %}>No</option></select></td>
+      <td><input form="{{ f }}" type="password" name="password" placeholder="leave empty to keep" autocomplete="new-password"></td>
+      <td><button form="{{ f }}">Save</button></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<form method="post" class="card narrow">
+  <h2>Add user</h2>
+  <input type="hidden" name="csrf" value="{{ csrf_token }}">
+  <input type="hidden" name="action" value="create">
+  <label class="field"><span>Username</span><input type="text" name="username" required></label>
+  <label class="field"><span>Display name</span><input type="text" name="display_name" required></label>
+  <label class="field"><span>Role</span><select name="role">{% for r in roles %}<option {% if r == 'member' %}selected{% endif %}>{{ r }}</option>{% endfor %}</select></label>
+  <label class="field"><span>Initial password (min. 10 characters)</span><input type="password" name="password" autocomplete="new-password" required></label>
+  <button class="primary">Create user</button>
+</form>
+
+<div class="card">
+  <h3>Role permissions</h3>
+  <ul>
+    <li><b>viewer</b> — read, search, export</li>
+    <li><b>member</b> — + create A3s, edit content, duplicate, draft from notes</li>
+    <li><b>team_leader</b> — + change A3 status, manage templates</li>
+    <li><b>champion</b> — + step sign-off (roles allowed to sign off are set in a3config.toml)</li>
+    <li><b>admin</b> — + manage users, delete A3s</li>
+  </ul>
+</div>
+{% endblock %}

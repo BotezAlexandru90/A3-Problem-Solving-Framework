@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Read Across register</h1>
+<table class="grid">
+  <thead><tr><th>A3</th><th>Scope item</th><th>Rationale / evidence</th><th>Action</th><th>Owner</th><th>Due</th><th>Status</th><th>Confirmation</th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+    <tr class="{{ 'overdue' if r.due_date and r.status in ('Open', 'In progress') and r.due_date < today else '' }}">
+      <td><a href="{{ url_for('a3.view', a3_id=r.a3_id, tab='d') }}">#{{ r.a3_id }} {{ r.a3_title }}</a></td>
+      <td>{{ r.scope_item }}</td><td>{{ r.rationale }}</td><td>{{ r.action }}</td>
+      <td>{{ r.owner }}</td><td>{{ r.due_date }}</td><td>{{ r.status }}</td><td>{{ r.confirmation }}</td>
+    </tr>
+  {% else %}<tr><td colspan="8">No Read Across items.</td></tr>{% endfor %}
+  </tbody>
+</table>
+{% endblock %}

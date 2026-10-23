@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block content %}
+<form method="post" class="card narrow">
+  <h1>Change password</h1>
+  <input type="hidden" name="csrf" value="{{ csrf_token }}">
+  <label class="field"><span>Current password</span><input type="password" name="current" autocomplete="current-password" required></label>
+  <label class="field"><span>New password (min. 10 characters)</span><input type="password" name="password" autocomplete="new-password" required></label>
+  <label class="field"><span>Repeat new password</span><input type="password" name="password2" autocomplete="new-password" required></label>
+  <button class="primary">Change password</button>
+</form>
+{% endblock %}

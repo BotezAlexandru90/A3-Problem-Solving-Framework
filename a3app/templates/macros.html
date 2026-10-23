@@ -1,0 +1,61 @@
+{% macro field(name, label, widget, value, options, hypotheses=None, restrict=None, readonly=False) %}
+<label class="field">
+  <span>{{ label }}{% if widget in ('area', 'text') or widget.startswith('list:') %} <button type="button" class="copy no-print" data-copy="{{ name }}" title="Copy for myA3Creator">Copy</button>{% endif %}</span>
+  {% if widget == 'area' %}
+    <textarea name="{{ name }}" id="f_{{ name }}" rows="4" {{ 'readonly' if readonly }}>{{ value or '' }}</textarea>
+  {% elif widget == 'date' %}
+    <input type="date" name="{{ name }}" value="{{ value or '' }}" {{ 'readonly' if readonly }}>
+  {% elif widget == 'int' %}
+    <input type="number" step="1" min="1" name="{{ name }}" value="{{ value or 1 }}">
+  {% elif widget == 'number' %}
+    <input type="number" step="any" name="{{ name }}" value="{{ value if value is not none else '' }}" required>
+  {% elif widget.startswith('list:') %}
+    {% set key = widget.split(':')[1] %}
+    <input type="text" name="{{ name }}" id="f_{{ name }}" value="{{ value or '' }}" list="dl_{{ key }}" {{ 'readonly' if readonly }}>
+    <datalist id="dl_{{ key }}">{% for o in options[key] %}<option value="{{ o }}">{% endfor %}</datalist>
+  {% elif widget == 'cause' %}
+    <select name="{{ name }}">
+      <option value="">-- none --</option>
+      {% for h in hypotheses %}
+        <option value="{{ h.id }}" {% if value|string == h.id|string %}selected{% endif %}>
+          #{{ h.id }} [{{ h.category }}] {{ h.hypothesis[:80] }} ({{ h.status }})
+        </option>
+      {% endfor %}
+    </select>
+    <small>Only causes with status "Verified" satisfy the Step C gate.</small>
+  {% elif widget.startswith('select:') %}
+    {% set opts = options[widget.split(':')[1]] %}
+    {% if restrict %}{% set opts = restrict %}{% endif %}
+    <select name="{{ name }}">
+      {% for o in opts %}<option {% if o == value %}selected{% endif %}>{{ o }}</option>{% endfor %}
+    </select>
+  {% else %}
+    <input type="text" name="{{ name }}" id="f_{{ name }}" value="{{ value or '' }}" {{ 'readonly' if readonly }}>
+  {% endif %}
+</label>
+{% endmacro %}
+
+{% macro fb_cat(name, items) %}
+<div class="fb-cat">
+  <h4>{{ name }}</h4>
+  <ul>
+    {% for h in items %}
+      <li class="st-{{ h.status|lower|replace(' ', '-') }}" title="{{ h.category }} · {{ h.status }}">#{{ h.id }} {{ h.hypothesis[:70] }}</li>
+    {% else %}<li class="muted">—</li>{% endfor %}
+  </ul>
+</div>
+{% endmacro %}
+
+{% macro gate_panel(gate, title) %}
+<div class="gate {{ 'ready' if gate.ready else 'open' }}">
+  <h3>{{ title }} — quality gate: {{ 'passed' if gate.ready else 'open' }}</h3>
+  <ul>
+    {% for c in gate.checks %}
+      <li class="{{ 'pass' if c.passed else ('fail' if c.level == 'required' else 'warn') }}" title="Check id: {{ c.id }} ({{ c.level }})">
+        {{ '✔' if c.passed else ('✖' if c.level == 'required' else '!') }} {{ c.label }}
+        {% if not c.passed and c.hint %}<small>— {{ c.hint }}</small>{% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endmacro %}

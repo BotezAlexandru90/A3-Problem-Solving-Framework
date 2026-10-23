@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Change history — A3 #{{ a3.id }}: <a href="{{ url_for('a3.view', a3_id=a3.id) }}">{{ a3.title }}</a></h1>
+
+<h2>Sign-offs</h2>
+<table class="grid small">
+  <thead><tr><th>When</th><th>Step</th><th>Decision</th><th>By</th><th>Comment</th></tr></thead>
+  <tbody>
+  {% for s in signoffs %}
+    <tr><td>{{ s.ts }}</td><td>{{ step_label.get(s.step, s.step) }}</td><td>{{ s.decision }}</td><td>{{ s.user }}</td><td>{{ s.comment }}</td></tr>
+  {% else %}<tr><td colspan="5" class="muted">No sign-offs yet.</td></tr>{% endfor %}
+  </tbody>
+</table>
+
+<h2>All changes</h2>
+<table class="grid small">
+  <thead><tr><th>When</th><th>By</th><th>Step</th><th>Item</th><th>Field</th><th>Old value</th><th>New value</th></tr></thead>
+  <tbody>
+  {% for h in rows %}
+    <tr>
+      <td class="nowrap">{{ h.ts }}</td><td>{{ h.user }}</td><td>{{ step_label.get(h.step, '') }}</td>
+      <td>{{ h.entity }}{% if h.entity_id and h.entity != 'a3' %} #{{ h.entity_id }}{% endif %}</td>
+      <td>{{ h.field }}</td><td>{{ h.old_value if h.old_value is not none else '' }}</td><td>{{ h.new_value if h.new_value is not none else '' }}</td>
+    </tr>
+  {% else %}<tr><td colspan="7" class="muted">No changes recorded.</td></tr>{% endfor %}
+  </tbody>
+</table>
+{% endblock %}

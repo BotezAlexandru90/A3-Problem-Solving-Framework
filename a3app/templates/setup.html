@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}First-time setup — A3 Tracker{% endblock %}
+{% block content %}
+<form method="post" class="card narrow">
+  <h1>Create the first admin account</h1>
+  <p class="muted">This page is only available on the server machine and only until the first user exists.</p>
+  <input type="hidden" name="csrf" value="{{ csrf_token }}">
+  <label class="field"><span>Username</span><input type="text" name="username" required autofocus></label>
+  <label class="field"><span>Display name (shown in history and sign-offs)</span><input type="text" name="display_name" required></label>
+  <label class="field"><span>Password (min. 10 characters)</span><input type="password" name="password" autocomplete="new-password" required></label>
+  <label class="field"><span>Repeat password</span><input type="password" name="password2" autocomplete="new-password" required></label>
+  <button class="primary">Create admin</button>
+</form>
+{% endblock %}

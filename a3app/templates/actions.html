@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Action tracker — open actions across all active A3s</h1>
+<table class="grid">
+  <thead><tr><th>A3</th><th>#</th><th>Type</th><th>Action</th><th>Owner</th><th>Due</th><th>Status</th><th>Result</th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+    <tr class="{{ 'overdue' if r.due_date and r.due_date < today else '' }}">
+      <td><a href="{{ url_for('a3.view', a3_id=r.a3_id, tab='c') }}">#{{ r.a3_id }} {{ r.a3_title }}</a></td>
+      <td>{{ r.id }}</td><td>{{ r.action_type }}</td><td>{{ r.description }}</td>
+      <td>{{ r.owner or '—' }}</td><td>{{ r.due_date or '—' }}</td><td>{{ r.status }}</td><td>{{ r.effectiveness }}</td>
+    </tr>
+  {% else %}<tr><td colspan="8">No open actions.</td></tr>{% endfor %}
+  </tbody>
+</table>
+{% endblock %}

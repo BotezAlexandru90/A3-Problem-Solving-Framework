@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block title %}Log in — A3 Tracker{% endblock %}
+{% block content %}
+<form method="post" class="card narrow">
+  <h1>Log in</h1>
+  <input type="hidden" name="csrf" value="{{ csrf_token }}">
+  <label class="field"><span>Username</span><input type="text" name="username" autocomplete="username" required autofocus></label>
+  <label class="field"><span>Password</span><input type="password" name="password" autocomplete="current-password" required></label>
+  <button class="primary">Log in</button>
+  <p class="muted">No account? Ask an A3 Tracker admin.</p>
+</form>
+{% endblock %}
